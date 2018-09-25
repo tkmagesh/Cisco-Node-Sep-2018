@@ -3,46 +3,63 @@
 	{id : 2, name : 'Explore Bangalore', isCompleted : true}
 ];
 */
+var taskDb = require('./taskDb');
 
-function getAll(){
-	return taskList;
+function getAll(callback){
+	taskDb.get(function(err,tasks){
+		callback(err, tasks);
+	});
 }
 
-function save(taskData, id){
-	if (!id){
-		taskData.id = taskList.reduce(function(result, task){
-			return result > task.id ? result : task.id;
-		}, 0) + 1;
-		taskList.push(taskData);
-		return taskData;
-	} else {
-		var taskToRemove = taskList.filter(function(task){
+function save(taskData, id, callback){
+	taskDb.get(function(err, tasks){
+		if (err){
+			return callback(err, null);
+		}
+		if (!id){
+			taskData.id = tasks.reduce(function(result, task){
+				return result > task.id ? result : task.id;
+			}, 0) + 1;
+			tasks.push(taskData);
+			taskDb.save(tasks, callback);
+		} else {
+			var taskToRemove = tasks.filter(function(task){
+				return task.id === id;
+			});
+			if (taskToRemove){
+				var taskToUpdate = taskData;
+				tasks = tasks.map(function(task){
+					return task.id === id ? taskToUpdate : task;
+				});
+				taskDb.save(tasks, callback);
+			} else {
+				var notFoundError = new Error();
+				notFoundError['type'] = 'NOT_FOUND';
+				callback(notFoundError, null);
+			}
+		}
+	})
+}
+
+function remove(id, callback){
+	taskDb.get(function(err, tasks){
+		if (err){
+			return callback(err, null);
+		}
+		var taskToRemove = tasks.filter(function(task){
 			return task.id === id;
 		});
 		if (taskToRemove){
-			var taskToUpdate = taskData;
-			taskList = taskList.map(function(task){
-				return task.id === id ? taskToUpdate : task;
+			tasks = tasks.filter(function(task){
+				return task.id !== id;
 			});
-			return taskData;
+			taskDb.save(tasks, callback);
 		} else {
-			return false;
+			var notFoundError = new Error();
+			notFoundError['type'] = 'NOT_FOUND';
+			callback(notFoundError, null);
 		}
-	}
-}
-
-function remove(id){
-	var taskToRemove = taskList.filter(function(task){
-		return task.id === id;
 	});
-	if (taskToRemove){
-		taskList = taskList.filter(function(task){
-			return task.id !== id;
-		});
-		return true;
-	} else {
-		return false;
-	}
 }
 
 module.exports = { getAll, save, remove };
