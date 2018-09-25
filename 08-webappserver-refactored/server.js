@@ -4,9 +4,11 @@ var app = require('./app'),
 	dataParser = require('./dataParser'),
 	serveStatic = require('./serveStatic'),
 	serveCalculator = require('./serveCalculator'),
-	notFoundHandler = require('./notFoundHandler');
+	notFoundHandler = require('./notFoundHandler'),
+	logger = require('./logger');
 
 app.use(dataParser);
+app.use(logger);
 app.use(serveStatic);
 app.use(serveCalculator);
 app.use(notFoundHandler);
